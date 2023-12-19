@@ -30,11 +30,11 @@ int EncerrarPacientes()
 
 int VerificarCodigoPaciente(int codigo)
 {
-    Paciente* verificaPaciente;
-    fseek(pacientes, 0, SEEK_SET); // Move para início do arquivo
+    Paciente verificaPaciente;
+    fseek(pacientes, 0, SEEK_SET); // Move para o início do arquivo
     while (fread(&verificaPaciente, sizeof(Paciente), 1, pacientes) == 1)
     {
-        if (verificaPaciente->codigo == codigo)
+        if (verificaPaciente.codigo == codigo)
         {
             return 1; // Código já existe na lista de pacientes
         }
@@ -51,13 +51,11 @@ int SalvarPaciente(Paciente p)
 
     if (VerificarCodigoPaciente(p.codigo))
     {
-        return 0;
+        return 0; // Código já existente na lista de pacientes
     }
-    
-    // Aloca memória dinâmica para as strings da estrutura Paciente
-    p.nome = strdup(p.nome);
 
-    fseek(pacientes, 0, SEEK_END);  // Move para o final do arquivo
+    fseek(pacientes, 0, SEEK_END); // Move para o final do arquivo
+
     fwrite(&p, sizeof(Paciente), 1, pacientes);
 
     return 1;
@@ -71,13 +69,15 @@ int QuantidadePacientes()
     }
 
     Paciente countPacientes;
-    fseek(pacientes, 0, SEEK_SET); // Move para início do arquivo
+    fseek(pacientes, 0, SEEK_SET); // Move para o início do arquivo
     int quantidade = 0;
 
     while (fread(&countPacientes, sizeof(Paciente), 1, pacientes) == 1)
     {
         quantidade++;
     }
+
+    fseek(pacientes, 0, SEEK_SET); // Reinicia o ponteiro para o início do arquivo
 
     return quantidade;
 }
@@ -87,17 +87,14 @@ Paciente* ObterPacientePeloIndice(int indice)
     if (indice >= 0 && indice < QuantidadePacientes())
     {
         Paciente* copiaPaciente = (Paciente*)malloc(sizeof(Paciente));
-        fseek(pacientes, indice * sizeof(Paciente), SEEK_SET);  // Move para a posição do registro
+        fseek(pacientes, indice * sizeof(Paciente), SEEK_SET); // Move para a posição do registro
 
         if (!copiaPaciente)
         {
             return NULL;
         }
-        
+
         fread(copiaPaciente, sizeof(Paciente), 1, pacientes);
-        
-        // Aloca memória dinâmica para as strings da estrutura Paciente
-    	copiaPaciente->nome = strdup(copiaPaciente->nome);
 
         return copiaPaciente;
     }
@@ -108,28 +105,19 @@ void LiberarCopiaPaciente(Paciente* copiaPaciente)
 {
     if (copiaPaciente != NULL)
     {
-        free(copiaPaciente->nome);
         free(copiaPaciente);
     }
 }
 
-Paciente* ObterPacientePeloCodigo(int codigo)
+Paciente* ObterPacientePeloCodigo(int codigo, Paciente* paciente)
 {
-    Paciente obterPaciente;
     fseek(pacientes, 0, SEEK_SET); // Move para início do arquivo.
 
-    while (fread(&obterPaciente, sizeof(Paciente), 1, pacientes) == 1)
+    while (fread(paciente, sizeof(Paciente), 1, pacientes) == 1)
     {
-        if (obterPaciente.codigo == codigo)
+        if (paciente->codigo == codigo)
         {
-            Paciente* copiaPaciente = (Paciente*)malloc(sizeof(Paciente));
-            if (!copiaPaciente)
-            {
-                return NULL;
-            }
-
-            *copiaPaciente = obterPaciente;
-            return copiaPaciente;
+            return paciente;
         }
     }
 
@@ -153,7 +141,7 @@ int AtualizarPaciente(Paciente p)
 
     int verificacao = 0;
 
-    fseek(pacientes, 0, SEEK_SET); // Move para início do arquivo
+    fseek(pacientes, 0, SEEK_SET); // Move para o início do arquivo
 
     while (fread(&pacienteExistente, sizeof(Paciente), 1, pacientes) == 1)
     {
@@ -163,9 +151,11 @@ int AtualizarPaciente(Paciente p)
         }
         else
         {
-        	// Atualiza o pacienteExistente com os novos dados
-        	pacienteExistente = p;
-        	fwrite(&pacienteExistente, sizeof(Paciente), 1, temp);
+            // Atualiza o pacienteExistente com os novos dados
+            pacienteExistente = p;
+
+            // Escreve o pacienteExistente de volta no arquivo
+            fwrite(&pacienteExistente, sizeof(Paciente), 1, temp);
 
             verificacao = 1; // Paciente com o código especificado encontrado
         }
@@ -174,8 +164,10 @@ int AtualizarPaciente(Paciente p)
     fclose(pacientes);
     fclose(temp);
 
-    remove("pacientes.bin");
-    rename("temp.bin", "pacientes.bin");
+    if (remove("pacientes.bin") != 0 || rename("temp.bin", "pacientes.bin") != 0)
+    {
+        return 0;
+    }
 
     pacientes = fopen("pacientes.bin", "rb+");
 
@@ -184,17 +176,22 @@ int AtualizarPaciente(Paciente p)
 
 int ModificarPacientePeloCodigo(int codigo, const char* novoNome, int novaIdade, float novaAltura)
 {
-    Paciente* pacienteParaAtualizar = ObterPacientePeloCodigo(codigo);
+    Paciente pacienteParaAtualizar;
 
-    if (pacienteParaAtualizar != NULL)
+    if (ObterPacientePeloCodigo(codigo, &pacienteParaAtualizar))
     {
-        free(pacienteParaAtualizar->nome); // Libera a memória do nome existente
-        pacienteParaAtualizar->nome = strdup(novoNome);
-        pacienteParaAtualizar->idade = novaIdade;
-        pacienteParaAtualizar->altura = novaAltura;
+        // Modifica os campos necessários
+        strcpy(pacienteParaAtualizar.nome, novoNome);
+        pacienteParaAtualizar.idade = novaIdade;
+        pacienteParaAtualizar.altura = novaAltura;
 
-        return AtualizarPaciente(*pacienteParaAtualizar);
+        // Atualiza no arquivo
+        if (AtualizarPaciente(pacienteParaAtualizar))
+        {
+            return 1; // Sucesso na atualização
+        }
     }
+
     return 0; // Paciente com o código especificado não encontrado
 }
 
@@ -215,7 +212,7 @@ int ApagarPacientePeloCodigo(int codigo)
 
     int verificacao = 0;
 
-    fseek(pacientes, 0, SEEK_SET); // Move para início do arquivo
+    fseek(pacientes, 0, SEEK_SET); // Move para o início do arquivo
 
     while (fread(&apagadoPaciente, sizeof(Paciente), 1, pacientes) == 1)
     {
@@ -233,7 +230,7 @@ int ApagarPacientePeloCodigo(int codigo)
     fclose(temp);
 
     if (remove("pacientes.bin") != 0 || rename("temp.bin", "pacientes.bin") != 0)
-	{
+    {
         return 0;
     }
 

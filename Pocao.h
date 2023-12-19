@@ -1,10 +1,12 @@
 #ifndef POCAO_H
 #define POCAO_H
 
+#define MAX_STRING 100
+
 typedef struct {
     int codigo;
-    char* nome;
-    char* tipo;
+    char nome[MAX_STRING];
+    char tipo[MAX_STRING];
 } Pocao;
 
 int InicializarPocoes();

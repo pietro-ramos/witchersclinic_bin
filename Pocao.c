@@ -54,10 +54,6 @@ int SalvarPocao(Pocao p)
         return 0;
     }
 
-    // Aloca memória dinâmica para as strings da estrutura Pocao
-    p.nome = strdup(p.nome);
-    p.tipo = strdup(p.tipo);
-
     fseek(pocoes, 0, SEEK_END);  // Move para o final do arquivo
     fwrite(&p, sizeof(Pocao), 1, pocoes);
 
@@ -97,10 +93,6 @@ Pocao* ObterPocaoPeloIndice(int indice)
 
         fread(copiaPocao, sizeof(Pocao), 1, pocoes);
 
-        // Alocação de memória para as strings
-        copiaPocao->nome = strdup(copiaPocao->nome);
-        copiaPocao->tipo = strdup(copiaPocao->tipo);
-
         return copiaPocao;
     }
     return NULL;
@@ -110,8 +102,7 @@ void LiberarCopiaPocao(Pocao* copiaPocao)
 {
     if (copiaPocao != NULL)
     {
-        free(copiaPocao->nome);
-        free(copiaPocao->tipo);
+        // Nenhuma alocação dinâmica para strings a ser liberada
         free(copiaPocao);
     }
 }
@@ -191,11 +182,9 @@ int ModificarPocaoPeloCodigo(int codigo, const char* novoNome, const char* novoT
 
     if (pocaoParaAtualizar != NULL)
     {
-        free(pocaoParaAtualizar->nome); // Libera a memória do nome existente
-        free(pocaoParaAtualizar->tipo); // Libera a memória do tipo existente
-
-        pocaoParaAtualizar->nome = strdup(novoNome);
-        pocaoParaAtualizar->tipo = strdup(novoTipo);
+        // Nenhuma alocação dinâmica para strings, apenas copia os dados
+        strcpy(pocaoParaAtualizar->nome, novoNome);
+        strcpy(pocaoParaAtualizar->tipo, novoTipo);
 
         return AtualizarPocao(*pocaoParaAtualizar);
     }

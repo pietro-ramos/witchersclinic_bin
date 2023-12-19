@@ -152,41 +152,39 @@ Tratamento* ObterTratamentoPeloCodigo(int codigo)
     return NULL;
 }
 
-int ObterNomeBruxo(int codigo, char *nomeBruxo)
+int ObterNomeBruxo(int codigo, char* nomeBruxo)
 {
-    Bruxo* bruxo = ObterBruxoPeloCodigo(codigo);
-    if (bruxo != NULL)
+    Bruxo bruxo;
+    if (ObterBruxoPeloCodigo(codigo, &bruxo) != NULL)
     {
-        strcpy(nomeBruxo, bruxo->nome);
-        LiberarCopiaBruxo(bruxo);
+        strcpy(nomeBruxo, bruxo.nome);
         return 1;
     }
     return 0;
 }
 
-int ObterNomePocao(int codigo, char *nomePocao)
+int ObterNomePocao(int codigo, char* nomePocao)
 {
-    Pocao* pocao = ObterPocaoPeloCodigo(codigo);
-    if (pocao != NULL)
+    Pocao pocao;
+    if (ObterPocaoPeloCodigo(codigo) != NULL)
     {
-        strcpy(nomePocao, pocao->nome);
-        LiberarCopiaPocao(pocao);
+        strcpy(nomePocao, pocao.nome);
         return 1;
     }
     return 0;
 }
 
-int ObterNomePaciente(int codigo, char *nomePaciente)
+int ObterNomePaciente(int codigo, char* nomePaciente)
 {
-    Paciente* paciente = ObterPacientePeloCodigo(codigo);
-    if (paciente != NULL)
+    Paciente paciente;
+    if (ObterPacientePeloCodigo(codigo, &paciente) != NULL)
     {
-        strcpy(nomePaciente, paciente->nome);
-        LiberarCopiaPaciente(paciente);
+        strcpy(nomePaciente, paciente.nome);
         return 1;
     }
     return 0;
 }
+
 
 int ListarTratamentosPaciente(int codigoPaciente, int** tratamentosPaciente)
 {
@@ -317,7 +315,7 @@ int ExcluirTratamento(int codigoTratamento)
 
     Tratamento apagadoTratamento;
 
-    FILE* temp = fopen("temp_tratamentos.bin", "wb+");
+    FILE* temp = fopen("temp.bin", "wb+");
     if (!temp)
     {
         return 0;
